@@ -60,10 +60,10 @@ class JoblisterSpiderMiddleware(object):
 
 class JSMiddleware(object):
     def __init__(self):
-        self.driver = webdriver.PhantomJS()
+        self.driver = webdriver.Firefox()
 
     def process_request(self, request, spider):
-        if request.meta.disable_selenium is False:
+        if request.meta.get('selenium_enable', True) is False:
             return None
         self.driver.get(request.url)
         return HtmlResponse(url=self.driver.current_url, body=self.driver.page_source, encoding='utf-8')
