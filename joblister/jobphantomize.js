@@ -49,94 +49,56 @@ function waitFor(testFx, onReady, onTimeout, timeOutMillis) {
 };
 
 function workday_tests() {
-    filterSearch = function (xpath, xpath_res) {
-        xpath_res = xpath_res || [[]];
+    filterSearch = function (xpathStructure, xpathroot, collection) {
+        collection = collection || {};
 
-        if (!xpath_res[xpath_res.length - 1].length) {
-            // []
-            xpath_res[0].push(document.evaluate(xpath[0], document, null, XPathResult.ANY_TYPE, null));
-        } else {
-            var xres = [];
-            xpath_res[xpath_res.length - 1].forEach(function (resobj) {
-                var mdom = resobj.iterateNext();
+        var xresult = document.evaluate(xpathStructure.xpath, xpathroot, null, XPathResult.ANY_TYPE, null);
+        var lcollection = [];
 
-                while (mdom) {
-                    xres.push(document.evaluate(xpath[0], mdom, null, XPathResult.ANY_TYPE, null));
-                    mdom = resobj.iterateNext();
-                }
-            });
-            xpath_res.push(xres);
+        if (xpathStructure.collection) {
+            var xdom = xresult.iterateNext();
+            var llcollection = {};
+            while (xdom) {
+                Object.keys(xpathStructure.collection).forEach(function (cname) {
+                    llcollection[cname] = filterSearch(xpathStructure.collection[cname], xdom);
+                });
+                xdom = xresult.iterateNext();
+            }
+
+            xresult = document.evaluate(xpathStructure.xpath, xpathroot, null, XPathResult.ANY_TYPE, null);
         }
 
-        if (xpath.length === 1)
-            return xpath_res;
+        if (xpathStructure.callback)
+            collection['result'] = xpathStructure.callback(xresult);
         else
-            return filterSearch(xpath.slice(1, xpath.length), xpath_res);
-    };
+            collection['result'] = [xresult];
 
-    var results_data = filterSearch([
-        '//*[@id="workdayApplicationFrame"]//div[@data-automation-id="facet"]',
-        '//div[@data-automation-id="facetValue"]//input'
-    ]);
+        return collection;
+
+    };
 
     var search_structure = {
         xpath: '//*[@id="workdayApplicationFrame"]//div[@data-automation-id="facet"]',
         collection: {
-            facetName: ['xpath', 'callback'],
-
-
-
-        },
-        child: {
-            xpath: '//div[@data-automation-id="facetValue"]//input',
-            xpath_root: '',
-            collection_name_xpath: '' || function () {
+            facetName: {
+                xpath: '//div[@data-automation-id="facetValue"]/@id',
+                callback: function (id_res) {
+                    console.log(id_res.iterateNext().value);
+                    return id_res.iterateNext().value.split('-').slice(-1)[0];
+                }
             },
-            collection_name: '',
-            collections: {
-                facetName: 'xpath' || function () {
-                },
-
-            },
-            child: {},
-            result_callback: function () {
-            },
-
+            facetValue: {
+                xpath: '//div[@data-automation-id="facetValue"]//label/text()',
+                callback: function (label_res) {
+                    console.log(label_res.iterateNext().nodeValue);
+                    return label_res.iterateNext().nodeValue;
+                }
+            }
         }
-
     };
 
-    var xstructure = {
-        xpath: '',
-        collection_name: '',
-
-    };
-
-    var test = {
-        facet: [{}, {}, {}],
-
-
-    };
-    results_data[results_data.length - 1].forEach(function (xres, i) {
-        var dat = xres.iterateNext();
-        while (dat) {
-            if (dat.parent().parent())
-
-                dat = xres.iterateNext();
-        }
-    });
+    filterSearch(search_structure, document);
 }
-
-// [[divRes], [obj,obj,obj]]
-// page.onLoadStarted = function () {
-//     page.evaluateJavaScript("function(){ window.workday =  window.workday || {}; \
-//         Object.defineProperty(window.workday, 'systemConfidenceLevel', {\
-//             writable: false,\
-//             value: 'DEV'\
-//         }); \
-//         document.head.append = document.head.appendChild;\
-//     }");
-// };
 
 
 page.open(websiteurl, function (status) {
@@ -163,16 +125,3 @@ page.open(websiteurl, function (status) {
         },
         5000);
 });
-
-
-function after_pageload() {
-    page_response_list.forEach(function (req) {
-        if (req.url.indexOf('clientRequestID') != -1) {
-            page.open(req.url, req.headers[0], function (status) {
-                fs.write('data.html', page.content, 'w');
-                page.render('nvidia.png');
-                phantom.exit();
-            });
-        }
-    });
-}
