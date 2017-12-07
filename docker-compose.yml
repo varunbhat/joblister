@@ -1,0 +1,9 @@
+version: '3'
+services:
+    jobscraper:
+        image: varunbhat/jobscraper
+        entrypoint: bash /scripts/start_crawl.sh
+        build: .
+        volumes:
+            - .:/src 
+            - ./scripts:/scripts

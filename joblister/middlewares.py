@@ -8,7 +8,11 @@
 from scrapy import signals
 from selenium import webdriver
 from scrapy.http import HtmlResponse
-
+import os
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 class JoblisterSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -60,10 +64,23 @@ class JoblisterSpiderMiddleware(object):
 
 class JSMiddleware(object):
     def __init__(self):
-        self.driver = webdriver.Firefox()
+        # fp = webdriver.FirefoxProfile("/home/varunbhat/.mozilla/firefox/mp0kt99x.default")
+        # fp.set_preference("browser.download.folderList",2)
+        # fp.set_preference("browser.download.dir", os.getcwd()+"/downloads")
+        # self.driver = webdriver.Firefox(firefox_profile=fp)
+        self.driver = webdriver.PhantomJS()
+
 
     def process_request(self, request, spider):
         if request.meta.get('selenium_enable', True) is False:
             return None
         self.driver.get(request.url)
+        
+        # Wait for Page to load
+        if request.meta.get('selenium_condition') is not None:
+            try:
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.ID, request.meta.get('selenium_condition'))))
+            except TimeoutException:
+                pass 
+
         return HtmlResponse(url=self.driver.current_url, body=self.driver.page_source, encoding='utf-8')
