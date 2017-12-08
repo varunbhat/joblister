@@ -98,10 +98,7 @@ function workday_tests() {
             facets: {
                 xpath: './/div[@data-automation-id="facetValue"]',
                 callback: function (res, coll, name) {
-                    console.log(name);
-                    coll[name] = coll.collection;
-                    delete coll.collection;
-                    return coll;
+                    return coll.collection;
                 },
                 collection: {
                     id: {
@@ -129,7 +126,7 @@ function workday_tests() {
             }
         }
     };
-    
+
     // result_structure = {
     //     xpath:'//*[@data-automation-id="faceted_search_result"]//*[@aria-label="Search Results"]//ul/li[@data-automation-id="compositeContainer"]',
     //     collection_name: 'jobs',
@@ -139,6 +136,8 @@ function workday_tests() {
     // };
 
     var results = filterSearch(search_structure, document);
+
+    results.locations
     // console.log(JSON.stringify(filterSearch(search_structure, document), null, 2));
 
 }
