@@ -49,55 +49,98 @@ function waitFor(testFx, onReady, onTimeout, timeOutMillis) {
 };
 
 function workday_tests() {
-    filterSearch = function (xpathStructure, xpathroot, collection) {
+    filterSearch = function (xpathStructure, xpathroot, cres_name, collection) {
         collection = collection || {};
 
-        var xresult = document.evaluate(xpathStructure.xpath, xpathroot, null, XPathResult.ANY_TYPE, null);
-        var lcollection = [];
-
         if (xpathStructure.collection) {
-            var xdom = xresult.iterateNext();
-            var llcollection = {};
+            var xresult = document.evaluate(xpathStructure.xpath, xpathroot, null, XPathResult.ANY_TYPE, null),
+                xdom = xresult.iterateNext(),
+                lcollection = [];
             while (xdom) {
+                var llcollection = {};
                 Object.keys(xpathStructure.collection).forEach(function (cname) {
-                    llcollection[cname] = filterSearch(xpathStructure.collection[cname], xdom);
+                    llcollection = filterSearch(xpathStructure.collection[cname], xdom, cname, llcollection);
                 });
                 xdom = xresult.iterateNext();
+                lcollection.push(llcollection);
             }
-
-            xresult = document.evaluate(xpathStructure.xpath, xpathroot, null, XPathResult.ANY_TYPE, null);
+            collection['collection'] = lcollection;
         }
 
+        var result = document.evaluate(xpathStructure.xpath, xpathroot, null, XPathResult.ANY_TYPE, null);
+        // console.log(xpathroot.id, xpathroot, xpathStructure.xpath, xpathStructure);
         if (xpathStructure.callback)
-            collection['result'] = xpathStructure.callback(xresult);
-        else
-            collection['result'] = [xresult];
+            collection = xpathStructure.callback(result, collection, cres_name);
+        else {
+            console.log('unparsable');
+            // collection[cres_name || 'result'] = result;
+        }
 
         return collection;
-
     };
 
     var search_structure = {
         xpath: '//*[@id="workdayApplicationFrame"]//div[@data-automation-id="facet"]',
+        callback: function (facet_res, coll, coll_name) {
+            var data = [];
+            var i = 0;
+            var facet = facet_res.iterateNext();
+            while (facet) {
+                var facet_name = facet.id.split('-').splice(-1)[0];
+                coll[facet_name] = coll.collection[i++];
+                facet = facet_res.iterateNext()
+            }
+            delete coll.collection;
+            return coll;
+        },
+
         collection: {
-            facetName: {
-                xpath: '//div[@data-automation-id="facetValue"]/@id',
-                callback: function (id_res) {
-                    console.log(id_res.iterateNext().value);
-                    return id_res.iterateNext().value.split('-').slice(-1)[0];
-                }
-            },
-            facetValue: {
-                xpath: '//div[@data-automation-id="facetValue"]//label/text()',
-                callback: function (label_res) {
-                    console.log(label_res.iterateNext().nodeValue);
-                    return label_res.iterateNext().nodeValue;
+            facets: {
+                xpath: './/div[@data-automation-id="facetValue"]',
+                callback: function (res, coll, name) {
+                    console.log(name);
+                    coll[name] = coll.collection;
+                    delete coll.collection;
+                    return coll;
+                },
+                collection: {
+                    id: {
+                        xpath: '@id',
+                        callback: function (id_res, coll, name) {
+                            coll[name] = id_res.iterateNext().value;
+                            return coll;
+                        }
+                    },
+                    selected: {
+                        xpath: '@aria-checked',
+                        callback: function (id_res, coll, name) {
+                            coll[name] = id_res.iterateNext().value;
+                            return coll;
+                        }
+                    },
+                    name: {
+                        xpath: './/label/text()',
+                        callback: function (text_res, coll, name) {
+                            coll[name] = text_res.iterateNext().nodeValue;
+                            return coll;
+                        }
+                    }
                 }
             }
         }
     };
+    
+    // result_structure = {
+    //     xpath:'//*[@data-automation-id="faceted_search_result"]//*[@aria-label="Search Results"]//ul/li[@data-automation-id="compositeContainer"]',
+    //     collection_name: 'jobs',
+    //     collection: {
+    //         job:
+    //     }
+    // };
 
-    filterSearch(search_structure, document);
+    var results = filterSearch(search_structure, document);
+    // console.log(JSON.stringify(filterSearch(search_structure, document), null, 2));
+
 }
 
 
@@ -113,15 +156,15 @@ page.open(websiteurl, function (status) {
 
     waitFor(function () {
             return page.evaluate(function () {
-                return document.getElementById("wd-FacetedSearchResultList-facetSearchResultList");
+                return document.getElementById("gibberish342alkvaiu4ouvai");
             });
         }, function () { // Ready
             // page.evaluate(workday_tests);
         }, function () { // timeout
             // after_pageload();
             // fs.write('nvidia.html', page.content, 'w');
-            // page.render('nvidia.png');
+            page.render('nvidia.png');
             page.evaluate(workday_tests);
         },
-        5000);
+        3000);
 });
