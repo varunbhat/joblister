@@ -12,6 +12,7 @@ page.viewportSize = {
 
 page.onConsoleMessage = function (msg) {
     console.log('Page Log: ' + msg);
+    fs.write('result.json', msg, 'w');
 };
 
 page.onResourceRequested = function (req, networkRequest) {
@@ -62,9 +63,14 @@ function setFacets(company_name, filter) {
 page.open(company.url, function () {
     page.evaluate(function () {
         (function (open) {
-            XMLHttpRequest.prototype.open = function () {
+            XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
                 this.addEventListener("readystatechange", function () {
-                    console.log(this.responseText);
+                    if (XMLHttpRequest.OPENED === this.readyState) {
+                        // console.log(url)
+                    }
+                    else if (XMLHttpRequest.DONE === this.readyState && this.getResponseHeader('Content-Type') === 'application/json') {
+                        console.log(this.responseText);
+                    }
                 }, false);
                 open.apply(this, arguments);
             };
@@ -72,17 +78,19 @@ page.open(company.url, function () {
     });
 
     page.injectJs('./injectionExtraction.js');
-    setInterval(function () {
-        page.render(company.name + '_old.png')
-    }, 3900);
 
-    setInterval(function () {
-        setFacets('broadcom', company.facet_filter);
-    }, 4000);
 
-    setInterval(function () {
-        page.render(company.name + '.png')
-    }, 6000);
+    // setInterval(function () {
+    //     page.render(company.name + '_old.png')
+    // }, 3900);
+    //
+    // setInterval(function () {
+    //     setFacets('broadcom', company.facet_filter);
+    // }, 4000);
+    //
+    // setInterval(function () {
+    //     page.render(company.name + '.png')
+    // }, 6000);
 
     setInterval(phantom.exit, 8000);
 });
