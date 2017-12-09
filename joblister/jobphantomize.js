@@ -11,8 +11,8 @@ page.viewportSize = {
 };
 
 page.onConsoleMessage = function (msg) {
-    console.log('Page Log: ' + msg);
-    fs.write('result.json', msg, 'w');
+    // console.log('Page Log: ' + msg);
+    // fs.write('result.json', msg, 'w');
 };
 
 page.onResourceRequested = function (req, networkRequest) {
@@ -20,7 +20,13 @@ page.onResourceRequested = function (req, networkRequest) {
 };
 
 page.onResourceReceived = function (res) {
+    // console.log('Response (#' + res.id + ', stage "' + res.stage + '"): ' + JSON.stringify(res, null, 2));
     // console.log('received: ' + JSON.stringify(res.url, undefined, 4));
+    if (res.contentType === 'application/json' && res.stage === 'end') {
+        console.log('received: ' + JSON.stringify(res.url, undefined, 4));
+        var file_name = res.url.split('?')[0].split('/').splice(-1)[0];
+        fs.write('results/' + file_name + '.json', res.body, 'w');
+    }
 };
 
 function setFacets(company_name, filter) {
@@ -37,7 +43,6 @@ function setFacets(company_name, filter) {
             }
             return res;
         }
-
 
         var results = filterSearch(facet_filter, document);
 
@@ -60,37 +65,51 @@ function setFacets(company_name, filter) {
 
 }
 
-page.open(company.url, function () {
-    page.evaluate(function () {
-        (function (open) {
-            XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
-                this.addEventListener("readystatechange", function () {
-                    if (XMLHttpRequest.OPENED === this.readyState) {
-                        // console.log(url)
-                    }
-                    else if (XMLHttpRequest.DONE === this.readyState && this.getResponseHeader('Content-Type') === 'application/json') {
-                        console.log(this.responseText);
-                    }
-                }, false);
-                open.apply(this, arguments);
-            };
-        })(XMLHttpRequest.prototype.open);
-    });
+page.open(company.url + '/login', function () {
+    login_fill = function () {
+        page.evaluate(function () {
+            (function (open) {
+                XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
+                    this.addEventListener("readystatechange", function () {
+                        if (XMLHttpRequest.OPENED === this.readyState) {
+                            // console.log(url)
+                        }
+                        else if (XMLHttpRequest.DONE === this.readyState && this.getResponseHeader('Content-Type') === 'application/json') {
+                            console.log(this.responseText);
+                        }
+                    }, false);
+                    open.apply(this, arguments);
+                };
+            })(XMLHttpRequest.prototype.open);
+        });
 
-    page.injectJs('./injectionExtraction.js');
+        page.evaluate(function () {
+            var username = document.evaluate(
+                '//*[@data-automation-id="auth_container"]//div[@data-automation-id="userName"]/input', document, null, 0, null)
+                .iterateNext();
+            var password = document.evaluate(
+                '//*[@data-automation-id="auth_container"]//div[@data-automation-id="password"]/input', document, null, 0, null)
+                .iterateNext();
 
+            var signin = document.evaluate(
+                '//*[@data-automation-id="auth_container"]//div[@data-automation-id="click_filter"]', document, null, 0, null)
+                .iterateNext();
 
-    // setInterval(function () {
-    //     page.render(company.name + '_old.png')
-    // }, 3900);
-    //
-    // setInterval(function () {
-    //     setFacets('broadcom', company.facet_filter);
-    // }, 4000);
-    //
-    // setInterval(function () {
-    //     page.render(company.name + '.png')
-    // }, 6000);
+            username.value = 'varunbhat.kn@gmail.com';
+            password.value = 'djptwm241@Sam';
+            // console.log(username.value);
+            // console.log(password.value);
+            signin.click();
+        });
+    };
 
-    setInterval(phantom.exit, 8000);
+    setInterval(function () {
+        login_fill();
+    }, 3000);
+
+    setInterval(function () {
+        page.render('broadcom_enc.png')
+    }, 4000);
+
+    setInterval(phantom.exit, 4000);
 });
