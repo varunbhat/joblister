@@ -95,8 +95,7 @@ page.open(company.url + '/login', function () {
                 '//*[@data-automation-id="auth_container"]//div[@data-automation-id="click_filter"]', document, null, 0, null)
                 .iterateNext();
 
-            username.value = 'varunbhat.kn@gmail.com';
-            password.value = 'djptwm241@Sam';
+
             // console.log(username.value);
             // console.log(password.value);
             signin.click();
