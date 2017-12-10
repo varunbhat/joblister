@@ -11,8 +11,12 @@ page.viewportSize = {
 };
 
 page.onConsoleMessage = function (msg) {
-    // console.log('Page Log: ' + msg);
+    console.log('Page Log: ' + msg);
     // fs.write('result.json', msg, 'w');
+};
+
+page.onUrlChanged = function (targetUrl) {
+    // console.log('New URL: ' + targetUrl);
 };
 
 page.onResourceRequested = function (req, networkRequest) {
@@ -22,11 +26,11 @@ page.onResourceRequested = function (req, networkRequest) {
 page.onResourceReceived = function (res) {
     // console.log('Response (#' + res.id + ', stage "' + res.stage + '"): ' + JSON.stringify(res, null, 2));
     // console.log('received: ' + JSON.stringify(res.url, undefined, 4));
-    if (res.contentType === 'application/json' && res.stage === 'end') {
-        console.log('received: ' + JSON.stringify(res.url, undefined, 4));
-        var file_name = res.url.split('?')[0].split('/').splice(-1)[0];
-        fs.write('results/' + file_name + '.json', res.body, 'w');
-    }
+    // if (res.contentType === 'application/json' && res.stage === 'end') {
+    // console.log('received: ' + JSON.stringify(res.url, undefined, 4));
+    // var file_name = res.url.split('?')[0].split('/').splice(-1)[0];
+    // fs.write('results/' + file_name + '.json', res.body, 'w');
+    // }
 };
 
 function setFacets(company_name, filter) {
@@ -53,7 +57,7 @@ function setFacets(company_name, filter) {
                 if (check_filter_condition(value.name, filter[facet])) {
                     setTimeout(function () {
                         var facet_id = value.id.split('-').splice(-1)[0];
-                        console.log(facet_id);
+                        // console.log(facet_id);
                         var element = document.getElementById('wd-FacetValue-CheckBox-' + facet_id + '-input');
                         element.click();
                     }, timeout_intervals);
@@ -66,23 +70,23 @@ function setFacets(company_name, filter) {
 }
 
 page.open(company.url + '/login', function () {
-    login_fill = function () {
-        page.evaluate(function () {
-            (function (open) {
-                XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
-                    this.addEventListener("readystatechange", function () {
-                        if (XMLHttpRequest.OPENED === this.readyState) {
-                            // console.log(url)
-                        }
-                        else if (XMLHttpRequest.DONE === this.readyState && this.getResponseHeader('Content-Type') === 'application/json') {
-                            console.log(this.responseText);
-                        }
-                    }, false);
-                    open.apply(this, arguments);
-                };
-            })(XMLHttpRequest.prototype.open);
-        });
+    page.evaluate(function () {
+        vb_hacks = {};
+        (function (open) {
+            XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
+                this.addEventListener("readystatechange", function () {
+                    if (XMLHttpRequest.DONE === this.readyState && this.getResponseHeader('Content-Type') === 'application/json') {
+                        // console.log("AJAX response: " + url);
+                        vb_hacks['data'] = vb_hacks['data'] || [];
+                        vb_hacks['data'].push({url: url, data: JSON.parse(this.responseText)});
+                    }
+                }, false);
+                open.apply(this, arguments);
+            };
+        })(XMLHttpRequest.prototype.open);
+    });
 
+    login_fill = function () {
         page.evaluate(function () {
             var username = document.evaluate(
                 '//*[@data-automation-id="auth_container"]//div[@data-automation-id="userName"]/input', document, null, 0, null)
@@ -96,19 +100,40 @@ page.open(company.url + '/login', function () {
                 .iterateNext();
 
 
+
             // console.log(username.value);
             // console.log(password.value);
             signin.click();
         });
     };
 
-    setInterval(function () {
+
+    setTimeout(function () {
         login_fill();
     }, 3000);
 
-    setInterval(function () {
-        page.render('broadcom_enc.png')
+    setTimeout(function () {
+        page.evaluate(function () {
+            var home_button = document.evaluate(
+                '//*[@id="workdayApplicationHeader"]//span[@class="workdayLogo"]', document, null, 0, null)
+                .iterateNext();
+            // console.log(home_button);
+            home_button.click();
+        });
     }, 4000);
 
-    setInterval(phantom.exit, 4000);
+    setTimeout(function () {
+        var data = page.evaluate(function () {
+            return JSON.stringify(vb_hacks);
+        });
+
+        fs.write('results/results.json', data, 'w');
+    }, 10000);
+
+    setTimeout(function () {
+        page.render('broadcom_enc.png');
+        phantom.exit();
+    }, 10000);
+
+    // setInterval(phantom.exit, 10000);
 });
