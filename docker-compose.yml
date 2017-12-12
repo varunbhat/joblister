@@ -1,9 +1,21 @@
 version: '3'
 services:
-    jobscraper:
-        image: varunbhat/jobscraper
-        entrypoint: bash /scripts/start_crawl.sh
-        build: .
-        volumes:
-            - ./joblister:/src
-            - ./scripts:/scripts
+  jobscraper:
+    image: varunbhat/jobscraper
+    entrypoint: bash /scripts/start_crawl.sh
+    build: .
+    volumes:
+      - ./joblister:/src
+      - ./scripts:/scripts
+
+    links:
+      - 'mongoSaver:db'
+
+  mongoSaver:
+    image: mongo:latest
+    container_name: jobsaver
+    volumes:
+      - ./db_data:/data/db
+
+
+

@@ -143,7 +143,7 @@ Object.keys(company).forEach(function (company_name) {
                     return JSON.stringify(vb_hacks);
                 });
 
-                fs.write('results/' + company_name + '_home.json', data, 'w');
+                fs.write('results/' + company_name + '.json', data, 'w');
             }, 9000);
 
             setTimeout(function () {
