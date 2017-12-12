@@ -7,7 +7,7 @@ workday_links = {
         url: 'https://infinera.wd1.myworkdayjobs.com/Infinera_Careers/login',
         facet_filter: {'locations': ['Sunnyvale', 'Allentown', 'Annapolis Junction']}
     },
-    intel: {url: 'https://intel.wd1.myworkdayjobs.com/en-US/External/login'},
+    // intel: {url: 'https://intel.wd1.myworkdayjobs.com/en-US/External/login'},
     broadcom: {
         url: 'https://avagotech.wd1.myworkdayjobs.com/External_Career/login',
         facet_filter: {'locations': ['USA']}

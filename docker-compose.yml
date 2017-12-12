@@ -5,5 +5,5 @@ services:
         entrypoint: bash /scripts/start_crawl.sh
         build: .
         volumes:
-            - .:/src 
+            - ./joblister:/src
             - ./scripts:/scripts
