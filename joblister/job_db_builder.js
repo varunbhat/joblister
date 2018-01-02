@@ -23,7 +23,7 @@ update_db = function (res) {
             if (err)
                 return Error("Collection not added");
 
-            db.collection(collection_name).sa;
+            // db.collection(collection_name).sa;
             console.log(result);
         });
 
